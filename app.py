@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import pypot.dynamixel
-from OSC import OSCServer
+from OSC import OSCServer, OSCClient, OSCMessage
 from time import sleep
 import types
 
 def app():
-    global dxlIO, server
+    global dxlIO, server, client
     ports = pypot.dynamixel.get_available_ports()
     if not ports:
         raise IOError('No port available.')
@@ -16,8 +16,9 @@ def app():
     server.handleTimeout = types.MethodType(handleTimeout, server) # Funny python's way to add a method to an instance of a class
     for motorID in availableIDs:
         server.addMsgHandler('/motor/' + str(motorID), motorHandler) # Register OSC handlers for each found ID
+    client = OSCClient()
+    client.connect(('localhost', 8001))
     print 'Ready. Found ' + str(availableIDs) + ' ID(s)'
-    # server.addMsgHandler('/motor/' + str(1), motorHandler) # Debug
     while True:
         sleep(1) # Here we simulate a game engine. First we do the game stuff...
         processFrame() # ... then call user script
@@ -25,11 +26,14 @@ def app():
 def motorHandler(addr, tags, data, source):
     # Ranges are given for AX-18 motors. For other models, see:
     # https://github.com/poppy-project/pypot/blob/master/pypot/dynamixel/conversion.py
-    global dxlIO
+    global dxlIO, client
     motorID = int(addr.split('/')[2])
     if (data[0] == 'factory_reset'):
        dxlIO.factory_reset()
     elif (data[0] == 'get_control_mode'):
+        m = OSCMessage('/motor/' + str(motorID))
+        m.append(dxlIO.get_control_mode([motorID])[0])
+        client.send(m)
         print dxlIO.get_control_mode([motorID])[0]
     elif (data[0] == 'get_alarm_led'):
         print dxlIO.get_alarm_LED([motorID])[0]
