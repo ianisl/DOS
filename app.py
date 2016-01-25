@@ -16,7 +16,7 @@ def app():
         server.addMsgHandler('/motor/' + str(motorID), motorHandler) # Register OSC handlers for each found ID
     client = OSCClient()
     client.connect(('localhost', 8001))
-    print 'Ready. Found ' + str(availableIDs) + ' ID(s)'
+    print 'Ready. Found ID(s) ' + str(availableIDs)
     while True:
         server.handle_request()
         sleep(0.01)
